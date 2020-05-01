@@ -28,6 +28,8 @@ logo_scale = 0.8;
 rubber_band_hooks = true;
 rubber_band_holes = true;
 
+band_hook_width = 9;
+
 slit_height = 14;
 
 debug_closed_percent = 0;
@@ -65,7 +67,7 @@ notch_depth = wall_thickness/2.0;
 debug_xray = false;
 debug_xray_depth = 10;
 
-band_hook_width = 9;
+
 band_hook_depth = wall_thickness * 2;
 band_hook_height = wall_thickness;
 band_hook_gap = 1;
@@ -420,7 +422,7 @@ module MakeBox()
             }	
             else if ( front_feature == "slit" )
             {
-                translate([0, wall_thickness, box_height + lid_height - slit_height]) 
+                translate([0, wall_thickness, box_height - slit_box_portion]) 
                     cube([  wall_thickness, interior_depth, slit_box_portion + lip_height]);
             }	
 
