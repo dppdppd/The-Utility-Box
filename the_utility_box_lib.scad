@@ -1,5 +1,5 @@
 VERSION = "1.00";
-COPYRIGHT_INFO = "\tThe Utility Box\n\t\n\n\tCopyright 2020 Ido Magal\n\tCreative Commons - Attribution - Non-Commercial - Share Alike.\n\thttps://creativecommons.org/licenses/by-nc-sa/4.0/legalcode";
+COPYRIGHT_INFO = "\tThe Utility Box\n\thttps://github.com/IdoMagal/The-Utility-Box\n\n\tCopyright 2020 Ido Magal\n\tCreative Commons - Attribution - Non-Commercial - Share Alike.\n\thttps://creativecommons.org/licenses/by-nc-sa/4.0/legalcode";
 
 ///////////
 
@@ -14,7 +14,7 @@ interior_depth = 112.0;
 interior_height = 20.0;
 lid_interior_height = 20.0;
 
-wall_thickness = 1.5;
+wall_thickness = 2;
 
 lip_height = 3.0;
 
@@ -66,11 +66,10 @@ debug_xray = false;
 debug_xray_depth = 10;
 
 band_hook_width = 9;
-band_hook_length = wall_thickness * 2;
+band_hook_depth = wall_thickness * 2;
 band_hook_height = wall_thickness;
 band_hook_gap = 1;
-band_hook_narrow = 3;
-band_hook_hook_dh = band_hook_height * 6;
+band_hook_stem_delta = 1;
 
 num_rubber_band_hooks_x = floor( interior_width / ( band_hook_width * 2 ));
 num_rubber_band_hooks_y = floor( interior_depth / ( band_hook_width * 2 ));
@@ -81,6 +80,8 @@ slit_lid_portion = min( lid_interior_height, slit_height);
 slit_box_portion = slit_height - slit_lid_portion;
 
 lip_thickness = wall_thickness - ( wall_thickness * lip_thickness_fraction );
+lip_radius = lip_height;
+
 angle = debug_closed_percent > 0 ? debug_closed_percent/100*(-180) : 0;
 
 ////////////////////////////////////////////////
@@ -88,6 +89,8 @@ angle = debug_closed_percent > 0 ? debug_closed_percent/100*(-180) : 0;
 
 module MakeAll()
 {
+    echo( str( "\n\n\n", COPYRIGHT_INFO, "\n\n\tVersion ", VERSION, "\n\n" ));
+
     if ( make_box )
         MoveToBoxPosition()
             XRay()
@@ -184,7 +187,7 @@ module MakeBandHooks( h = 0, lid = false )
 {
     module shape( )
     {
-        cube( [ band_hook_width, band_hook_length, band_hook_height]);
+        cube( [ band_hook_width, band_hook_depth, band_hook_height]);
     }
 
     module BandHookNegative()
@@ -201,8 +204,8 @@ module MakeBandHooks( h = 0, lid = false )
                     translate( [0, 0, -band_hook_gap])
                         shape();
 
-                    translate( [ band_hook_narrow, 0, band_hook_height - band_hook_gap])
-                        resize([ band_hook_width - 2*band_hook_narrow, 0, band_hook_gap])
+                    translate( [ band_hook_stem_delta, 0, band_hook_height - band_hook_gap])
+                        resize([ band_hook_width - 2*band_hook_stem_delta, 0, band_hook_gap])
                             shape();
                 }
             }
@@ -231,25 +234,27 @@ module MakeBandHooks( h = 0, lid = false )
             rotate( -90)
             BandHookNegative();
 
-        difference()
-        {
-            mirror( [1,0,0] )
-                translate([ -box_width, (i + 1) * dist - dist/2 + margin_y, h ])
-                    rotate( -90 )
-                        BandHookNegative();
 
-            // this is an ugly hack but it connects the severed hook back to the lid.
             if ( lid && front_feature == "slit" )
             {
                 mirror( [1,0,0] )
-            translate([ -box_width, (i + 1) * dist - dist/2 + margin_y, h ])
-                    translate( [ -band_hook_width/2, 0, 0])
-                        translate( [0,-2*band_hook_gap,0])
-                        translate( [ 4*band_hook_gap + band_hook_gap, band_hook_gap/2, 0])
-                            resize([ 3*band_hook_gap, 0, band_hook_height])
-                                shape();
-            }     
-        }                
+                    translate([ -box_width, (i + 1) * dist - dist/2 + margin_y, h ])
+                        rotate( 180 )
+                            rotate( -90, [0,1,0] )
+                                rotate( -90 )
+                                    BandHookNegative();
+            }   
+            else
+            {
+                mirror( [1,0,0] )
+                    translate([ -box_width, (i + 1) * dist - dist/2 + margin_y, h ])
+                        rotate( -90 )
+                            BandHookNegative();
+            }
+
+            // this is an ugly hack but it connects the severed hook back to the lid.
+  
+                       
 
     }   
 }
@@ -373,7 +378,7 @@ module MakeBox()
                         vec3 = [ box_width - ( notch_depth + tolerance ) * 2, box_depth - ( notch_depth + tolerance ) * 2,box_height ];
                         h = vec3[1];
                         rotation_vec = [1,0,0];
-                        radius = 2;
+                        radius = lip_radius;
 
                         translate( [ radius, 0, radius ])
                             rotate( -90, rotation_vec)
