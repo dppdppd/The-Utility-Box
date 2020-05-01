@@ -1,0 +1,5 @@
+*.stl
+/old
+*.rsls
+*.test.scad
+*.code-workspace
