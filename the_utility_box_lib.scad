@@ -265,7 +265,7 @@ module MakeBandHoles( lid = false )
 {
     hole_size = band_hook_width * 1/3;
 
-    module BandHoleNegative( axis )
+    module BandHoleNegative()
     {
        module MakeSmallHoles()
        {
@@ -305,33 +305,33 @@ module MakeBandHoles( lid = false )
     disty = interior_depth / num_rubber_band_hooks_y;
     distz = h / nz;
 
-    module Grid()
+    module Grid( x, y )
     {
-        if ( num_rubber_band_hooks_x > 0 && num_rubber_band_hooks_y > 0 )
-            for  (i = [ 0: 1 : num_rubber_band_hooks_x - 1 ]) 
-                for  (j = [ 0: 1: num_rubber_band_hooks_y - 1 ]) 
+        if ( x > 0 && y > 0 )
+            for  (i = [ 0: 1 : x - 1 ]) 
+                for  (j = [ 0: 1: y - 1 ]) 
                 {
                     translate([ (i + 1) * distx - distx/2 + margin_x,  (j + 1) * disty - disty/2 + margin_y, 0 ])
                             rotate( (i + j) * 90 )
-                                BandHoleNegative( "z" );
+                                BandHoleNegative();
                 }
     }
 
 
     resize( [ 0, 0, lid ? lid_height : box_height] )
-        Grid();
+        Grid( num_rubber_band_hooks_x, num_rubber_band_hooks_y );
 
     // front
     resize( [ 0, box_depth, 0])
         translate( [ 0, hole_size,0])
             RotateAboutPoint( 90, [1,0,0], [ box_width/2, 0, 0 ])
-                Grid();
+                Grid( num_rubber_band_hooks_x, nz );
 
     // side
     resize( [ box_width, 0, 0])
         translate( [ hole_size, 0,0])
             RotateAboutPoint( -90, [0,1,0], [ 0, finger_length, 0 ])
-                Grid();
+                Grid( nz, num_rubber_band_hooks_y);
 
 }
 
