@@ -333,7 +333,6 @@ module MakeBandHoles( lid = false )
             RotateAboutPoint( -90, [0,1,0], [ 0, finger_length, 0 ])
                 Grid();
 
-
 }
 
 module MakeBox() 

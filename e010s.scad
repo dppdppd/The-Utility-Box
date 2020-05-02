@@ -6,10 +6,10 @@ front_feature = "notch" ;// [ "none", "slit", "notch"]
 make_box = true;
 make_lid = true;
 
-interior_width = 83.0;
-interior_depth = 83.0;
-interior_height = 20.0;
-lid_interior_height = 36.0;
+interior_width = 86.0;
+interior_depth = 86.0;
+interior_height = 25.0;
+lid_interior_height = 42.0;
 
 wall_thickness = 1.5;
 

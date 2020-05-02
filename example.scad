@@ -9,7 +9,7 @@ make_lid = true;
 interior_width = 100.0;
 interior_depth = 100.0;
 interior_height = 100.0;
-lid_interior_height = 2.0;
+lid_interior_height = 20.0;
 
 wall_thickness = 2;
 

@@ -11,7 +11,7 @@ interior_depth = 112.0;
 interior_height = 20.0;
 lid_interior_height = 45.0;
 
-wall_thickness = 1.5;
+wall_thickness = 2;
 
 lip_height = 3.0;
 
