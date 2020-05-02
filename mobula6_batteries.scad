@@ -17,8 +17,8 @@ lip_height = 3.0;
 
 tolerance = 0.1;
 
-rubberband_hooks = true;
-rubberband_holes = false;
+rubber_band_hooks = true;
+rubber_band_holes = false;
 
 slit_height = 14;
 

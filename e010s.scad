@@ -11,14 +11,14 @@ interior_depth = 86.0;
 interior_height = 25.0;
 lid_interior_height = 42.0;
 
-wall_thickness = 1.5;
+wall_thickness = 2;
 
 lip_height = 3.0;
 
 tolerance = 0.1;
 
-rubberband_hooks = true;
-rubberband_holes = true;
+rubber_band_hooks = true;
+rubber_band_holes = true;
 
 slit_height = 14;
 

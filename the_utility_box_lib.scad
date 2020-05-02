@@ -71,7 +71,7 @@ debug_xray_depth = 10;
 band_hook_depth = wall_thickness * 2;
 band_hook_height = wall_thickness;
 band_hook_gap = 1;
-band_hook_stem_delta = 1;
+band_hook_stem_delta = 2;
 
 num_rubber_band_hooks_x = floor( interior_width / ( band_hook_width * 2 ));
 num_rubber_band_hooks_y = floor( interior_depth / ( band_hook_width * 2 ));
