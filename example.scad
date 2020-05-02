@@ -6,10 +6,10 @@ front_feature = "slit" ;// [ "none", "slit", "notch"]
 make_box = true;
 make_lid = true;
 
-interior_width = 30.0;
-interior_depth = 60.0;
-interior_height = 40.0;
-lid_interior_height = 20.0;
+interior_width = 100.0;
+interior_depth = 100.0;
+interior_height = 100.0;
+lid_interior_height = 2.0;
 
 wall_thickness = 2;
 
@@ -20,9 +20,9 @@ tolerance = 0.1;
 rubber_band_hooks = true;
 rubber_band_holes = true;
 
-band_hook_width = 20;
+band_hook_width = 10;
 
-slit_height = 5;
+slit_height = 14;
 
 debug_closed_percent = 0;
 

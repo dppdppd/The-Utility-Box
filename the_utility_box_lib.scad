@@ -263,24 +263,25 @@ module MakeBandHooks( h = 0, lid = false )
 
 module MakeBandHoles( lid = false )
 {
-    module BandHoleNegative()
-    {
+    hole_size = band_hook_width * 1/3;
 
+    module BandHoleNegative( axis )
+    {
        module MakeSmallHoles()
        {
            translate( [ 0, 0, 0 ])
            {
              translate( [ 0, 0, 0 ])
-                cube( [ band_hook_width * 1/3, band_hook_width * 1/3, band_hook_width * 1/3], center = false);
+                cube( [ hole_size, hole_size, hole_size], center = false);
 
-            translate( [ band_hook_width * 2/3, 0, 0 ])
-                cube( [ band_hook_width * 1/3, band_hook_width * 1/3, band_hook_width * 1/3], center = false);
+            translate( [ 2*hole_size, 0, 0 ])
+                cube( [ hole_size, hole_size, hole_size], center = false);
 
-            translate( [ 0, band_hook_width * 2/3, 0 ])
-                cube( [ band_hook_width * 1/3, band_hook_width * 1/3, band_hook_width * 1/3], center = false);
+            translate( [ 0, 2*hole_size, 0 ])
+                cube( [ hole_size, hole_size, hole_size], center = false);
 
-            translate( [ band_hook_width * 2/3, band_hook_width * 2/3, 0 ])
-                cube( [ band_hook_width * 1/3, band_hook_width * 1/3, band_hook_width * 1/3], center = false);
+            translate( [ 2*hole_size, 2*hole_size, 0 ])
+                cube( [ hole_size, hole_size, hole_size], center = false);
                 
            }
        }       
@@ -288,8 +289,8 @@ module MakeBandHoles( lid = false )
         translate( [ -band_hook_width/2, -band_hook_width/2, 0])
             MakeSmallHoles();
 
-        translate( [ -band_hook_width/2, -band_hook_width/2, band_hook_width * 2/3])
-            MakeSmallHoles();
+//        translate( [ -band_hook_width/2, -band_hook_width/2, band_hook_width * 2/3])
+//            MakeSmallHoles();
         
     }
 
@@ -304,7 +305,7 @@ module MakeBandHoles( lid = false )
     disty = interior_depth / num_rubber_band_hooks_y;
     distz = h / nz;
 
-    module Bottom()
+    module Grid()
     {
         if ( num_rubber_band_hooks_x > 0 && num_rubber_band_hooks_y > 0 )
             for  (i = [ 0: 1 : num_rubber_band_hooks_x - 1 ]) 
@@ -312,46 +313,25 @@ module MakeBandHoles( lid = false )
                 {
                     translate([ (i + 1) * distx - distx/2 + margin_x,  (j + 1) * disty - disty/2 + margin_y, 0 ])
                             rotate( (i + j) * 90 )
-                                BandHoleNegative();
+                                BandHoleNegative( "z" );
                 }
     }
 
-    module Front()
-    {
-        if ( nz > 0 && num_rubber_band_hooks_x > 0 )
-            for  (i = [ 0: 1 : num_rubber_band_hooks_x - 1 ]) 
-                for  (j = [ 0: 1: nz - 1 ]) 
-                {
-                    translate([ (i + 1) * distx - distx/2 + margin_x,  0, (j + 1) * distz - distz/2 + margin_z])
-                        BandHoleNegative();
-                }
-    }
 
-    module Side()
-    {
-        if ( nz > 0 && num_rubber_band_hooks_y > 0 )
-            for  (i = [ 0: 1 : num_rubber_band_hooks_y - 1 ]) 
-                for  (j = [ 0: 1: nz - 1 ]) 
-                {
-                    translate([ 0, (i + 1) * disty - disty/2 + margin_y, (j + 1) * distz - distz/2 + margin_z ])
-                        BandHoleNegative();
-                }
-    }
+    resize( [ 0, 0, lid ? lid_height : box_height] )
+        Grid();
 
-    Bottom();
+    // front
+    resize( [ 0, box_depth, 0])
+        translate( [ 0, hole_size,0])
+            RotateAboutPoint( 90, [1,0,0], [ box_width/2, 0, 0 ])
+                Grid();
 
-    translate([ 0, band_hook_width/3, -band_hook_width/2])
-        Front();
-
-    translate([ 0, box_depth - band_hook_width/3, -band_hook_width/2])
-        Front();
-
-    translate([ band_hook_width/3, 0, -band_hook_width/2])
-        Side();
-
-    translate([ box_width - band_hook_width/3, 0, -band_hook_width/2])
-        Side();
-
+    // side
+    resize( [ box_width, 0, 0])
+        translate( [ hole_size, 0,0])
+            RotateAboutPoint( -90, [0,1,0], [ 0, finger_length, 0 ])
+                Grid();
 
 
 }
