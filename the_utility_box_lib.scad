@@ -6,6 +6,8 @@ COPYRIGHT_INFO = "\tThe Utility Box\n\thttps://github.com/IdoMagal/The-Utility-B
 lid_type = "snap-on" ;// ["none", "one-piece", "snap-on", "fit-under"]
 front_feature = "notch" ;// [ "none", "slit", "notch"]
 
+lid_patterned = true;
+
 make_box = true;
 make_lid = true;
 
@@ -25,8 +27,6 @@ logo_top = false;
 logo_path = "";
 logo_scale = 0.8;
 
-num_detents_per_side = 2;
-
 rubber_band_hooks = true;
 rubber_band_holes = true;
 
@@ -34,7 +34,12 @@ band_hook_width = 9;
 
 slit_height = 14;
 
-debug_closed_percent = 0;
+lid_pattern_radius = 3.0;
+lid_pattern_n1 = 6;
+lid_pattern_n2 = 6;
+lid_pattern_row_offset = 50;
+lid_pattern_col_offset = 100;
+lid_pattern_shape_thickness = 0.8;
 
 ////////////////////////////////////////////////////////////////////
 
@@ -67,9 +72,6 @@ notch_width = interior_depth/2.0;
 notch_height = 2.0;
 notch_depth = wall_thickness/2.0;
 
-debug_xray = false;
-debug_xray_depth = 10;
-
 band_hook_depth = wall_thickness * 2;
 band_hook_height = wall_thickness;
 band_hook_gap = 1;
@@ -90,11 +92,18 @@ lip_thickness = wall_thickness - ( wall_thickness * lip_thickness_fraction );
 lip_thickness_inv = wall_thickness - lip_thickness;
 lip_radius = lip_height;
 
-angle = debug_closed_percent > 0 ? debug_closed_percent/100*(-180) : 0;
-
 free_lid = lid_type != "snap-on" && lid_type != "one-piece";
 
+num_detents_per_side = free_lid ? 1 : 2;
+
 vec_box_center = [ box_width/2, box_depth/2, 0];
+
+debug_closed_percent = 0;
+debug_xray = 0;
+debug_xray_depth = box_depth - 1.1;
+
+angle = debug_closed_percent > 0 ? debug_closed_percent/100*(-180) : 0;
+
 
 ////////////////////////////////////////////////
 ////////////////////////////////////////////////
@@ -131,7 +140,7 @@ module RotateAboutPoint(a, v, pt) {
 
 module XRay()
 {
-    if ( debug_xray )
+    if ( debug_xray && $preview )
     {
         intersection()
         {
@@ -184,14 +193,6 @@ module HingeDetent()
         sphere( r = 1);
 }
 
-module SnapDetent( smaller = false )
-{
-    lip_detent_radius = lip_thickness - ( smaller ? tolerance : 0 ) ;
-
-    translate( [ 0, -0.2, 0])
-        sphere( r = lip_detent_radius );
-    
-}
 
 module MakeBandHooks( h = 0, lid = false )
 {
@@ -346,12 +347,19 @@ module MakeDetents( lid = false )
 {
     module OneSideOfDetents( i )
     {
+        module SnapDetent( smaller = false )
+        {
+            lip_detent_radius = 3/4 * lip_thickness - ( smaller ? tolerance : 0 ) ;
+
+            translate( [ 0, -0.1, 0])
+                sphere( r = lip_detent_radius );
+            
+        }
+
         module PlaceDetent( i )
         {
             translate([ box_width * i/( num_detents_per_side + 1 ),   -( - wall_thickness + lip_thickness ), 0 ]) 
                 SnapDetent( lid );
-
-                echo( i );
         }
 
         PlaceDetent( i );
@@ -590,7 +598,7 @@ module MakeBox()
 }
 
 module MakeLidHinge( )
-{
+{    
     if ( lid_type == "snap-on" )
     {
         difference() 
@@ -658,25 +666,29 @@ module MakeLid()
 {
     difference() 
     {
-        // main box
+        // main shape
         cube([box_width,box_depth,lid_height - tolerance]);
         
-        translate([ wall_thickness, wall_thickness, wall_thickness]) 
-            union()
-            {
-                //main cavity
-                
-               cube([  interior_width, interior_depth, lid_height]);
-
-                // lip 
-                translate( [ -lip_thickness, -lip_thickness, lid_height - lip_height - wall_thickness])
-                    cube( [ interior_width + notch_depth * 2 , interior_depth + notch_depth * 2 , lip_height]);
-            }
-
-        if ( front_feature == "slit")
+        translate( [ wall_thickness, wall_thickness, 0 ] )
         {
-            translate( [ box_width - wall_thickness, wall_thickness, lid_interior_height - slit_lid_portion + wall_thickness])
-                cube([  wall_thickness, box_depth - 2*wall_thickness, slit_lid_portion]);
+            //main cavity
+            translate([ 0, 0, lid_patterned ? 0 : wall_thickness ]) 
+                cube([  interior_width, interior_depth, lid_height]);
+
+            // lip 
+                translate( [ -lip_thickness - tolerance,    
+                            -lip_thickness - tolerance,     
+                            lid_height - lip_height ])
+                    cube( [ interior_width + 2*notch_depth + 2*tolerance, 
+                            interior_depth + 2*notch_depth + 2*tolerance, 
+                            lip_height]);
+                
+
+            if ( front_feature == "slit")
+            {
+                translate( [ interior_width, 0, lid_interior_height - slit_lid_portion + wall_thickness])
+                    cube([  wall_thickness, box_depth - 2*wall_thickness, slit_lid_portion]);
+            }
         }
 
         if ( logo_top )
@@ -704,14 +716,81 @@ module MakeLid()
     }
 
     translate( [ 0, 0, lid_height - lip_height/2 ])
-        MakeDetents( lid = true )
+        MakeDetents( lid = true );
 
-    if ( lid_type != "none" )
-    {
+    if ( !free_lid )
         translate( [-finger_length,0,0])
             MakeLidHinge();
+    
+    // seal it
+    if ( lid_patterned )
+        MakePattern( box_width, box_depth, wall_thickness);
+}
+
+module MakePattern( x, y, z )
+{
+        // honeycomb
+    linear_extrude( z )
+    {
+        R = lid_pattern_radius;
+        t = lid_pattern_shape_thickness;
+
+        intersection()
+        {
+            polygon( [[0,0], 
+                    [0, y], 
+                    [ x, y],
+                    [ x, 0] ]);   
+            
+            Make2DPattern( x = x, y = y, R = R, t = t );
+        }
     }
 
+    module Make2DPattern( x = 0, y = 0, R = 1, t = 0.2 )
+    {
+        r = cos(30) * R;
+
+        dx = r * ( 1 + lid_pattern_col_offset / 100 ) - t;
+        dy = R * ( 1 + ( lid_pattern_row_offset / 100 ) ) - t;
+
+        x_count = x / dx;
+        y_count = y / dy;
+
+        for( j = [ 0: y_count ] )
+            translate( [ ( j % 2 ) * (r - t/2), 0, 0 ] )
+                for( i = [ 0: x_count ] )
+                    translate( [ i * dx, j * dy, 0 ] )
+                        rotate( a =30, v=[ 0, 0, 1 ] )
+                        {
+                            difference()
+                            {
+                                circle( r = R, $fn = lid_pattern_n1  );
+                                circle( r = R - t, $fn = lid_pattern_n2 );
+                            }
+                       //     Hex( R = R, t = t );    
+                       }
+
+
+        module Hex( R = 1, t = 0.2 )
+        {
+            polygon([
+                [ R * cos(0 * 2 * ( PI / 6)* 180 / PI), R * sin(0 * 2 * ( PI / 6) * 180 / PI) ],
+                [ R * cos(1 * 2 * ( PI / 6)* 180 / PI), R * sin(1 * 2 * ( PI / 6) * 180 / PI) ],
+                [ R * cos(2 * 2 * ( PI / 6)* 180 / PI), R * sin(2 * 2 * ( PI / 6) * 180 / PI) ],
+                [ R * cos(3 * 2 * ( PI / 6)* 180 / PI), R * sin(3 * 2 * ( PI / 6) * 180 / PI) ],
+                [ R * cos(4 * 2 * ( PI / 6)* 180 / PI), R * sin(4 * 2 * ( PI / 6) * 180 / PI) ],
+                [ R * cos(5 * 2 * ( PI / 6)* 180 / PI), R * sin(5 * 2 * ( PI / 6) * 180 / PI) ],
+                [ ( R - t ) * cos(0 * 2 * ( PI / 6)* 180 / PI), ( R - t ) * sin(0 * 2 * ( PI / 6) * 180 / PI) ],
+                [ ( R - t ) * cos(1 * 2 * ( PI / 6)* 180 / PI), ( R - t ) * sin(1 * 2 * ( PI / 6) * 180 / PI) ],
+                [ ( R - t ) * cos(2 * 2 * ( PI / 6)* 180 / PI), ( R - t ) * sin(2 * 2 * ( PI / 6) * 180 / PI) ],
+                [ ( R - t ) * cos(3 * 2 * ( PI / 6)* 180 / PI), ( R - t ) * sin(3 * 2 * ( PI / 6) * 180 / PI) ],
+                [ ( R - t ) * cos(4 * 2 * ( PI / 6)* 180 / PI), ( R - t ) * sin(4 * 2 * ( PI / 6) * 180 / PI) ],
+                [ ( R - t ) * cos(5 * 2 * ( PI / 6)* 180 / PI), ( R - t ) * sin(5 * 2 * ( PI / 6) * 180 / PI) ]],
+                
+                [[0,1,2,3,4,5],[6,7,8,9,10,11]]
+                );
+        };
+    }
 }
 
 module MirrorAboutPoint( v, pt) 

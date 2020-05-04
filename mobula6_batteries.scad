@@ -22,6 +22,4 @@ rubber_band_holes = false;
 
 slit_height = 14;
 
-debug_closed_percent = 0;
-
 MakeAll();
