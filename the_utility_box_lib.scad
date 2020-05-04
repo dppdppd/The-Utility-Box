@@ -25,6 +25,8 @@ logo_top = false;
 logo_path = "";
 logo_scale = 0.8;
 
+num_detents_per_side = 2;
+
 rubber_band_hooks = true;
 rubber_band_holes = true;
 
@@ -342,44 +344,32 @@ module MakeBandHoles( lid = false )
 
 module MakeDetents( lid = false )
 {
-    // detent holes
-    translate([ box_width * 1/3,   -( - wall_thickness + lip_thickness ), 0 ]) 
-        SnapDetent( lid );
-
-    translate([ box_width * 2/3,   -( - wall_thickness + lip_thickness - tolerance), 0]) 
-        SnapDetent( lid );
-
-    MirrorAboutPoint( [ 0, 1, 0], vec_box_center )
+    module OneSideOfDetents( i )
     {
-        translate([ box_width * 1/3,   -( - wall_thickness + lip_thickness ), 0 ]) 
-            SnapDetent(lid );
-
-        translate([ box_width * 2/3,   -( - wall_thickness + lip_thickness - tolerance), 0]) 
-            SnapDetent( lid );
-    }
-
-    if ( free_lid )
-    {
-
-        RotateAboutPoint( 90, [0, 0, 1], vec_box_center)
+        module PlaceDetent( i )
         {
-            translate([ box_width * 1/3,   -( - wall_thickness + lip_thickness ), 0 ]) 
+            translate([ box_width * i/( num_detents_per_side + 1 ),   -( - wall_thickness + lip_thickness ), 0 ]) 
                 SnapDetent( lid );
 
-            translate([ box_width * 2/3,   -( - wall_thickness + lip_thickness - tolerance), 0]) 
-                SnapDetent( lid );
-
-            MirrorAboutPoint( [ 0, 1, 0], vec_box_center)
-            {
-            translate([ box_width * 1/3,   -( - wall_thickness + lip_thickness ), 0 ]) 
-                    SnapDetent( lid );
-
-            translate([ box_width * 2/3,   -( - wall_thickness + lip_thickness - tolerance), 0]) 
-                    SnapDetent( lid );
-            }
+                echo( i );
         }
 
-    }  
+        PlaceDetent( i );
+
+        MirrorAboutPoint( [ 0, 1, 0], vec_box_center )
+            PlaceDetent( i );
+    }
+
+    for ( i = [ 1: num_detents_per_side ])
+    {
+        OneSideOfDetents( i );
+
+        if ( free_lid )
+            RotateAboutPoint( 90, [0, 0, 1], vec_box_center)
+                OneSideOfDetents( i );
+    }
+    
+
 }  
 
 module MakeBox() 
