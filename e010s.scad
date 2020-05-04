@@ -1,6 +1,6 @@
 include <the_utility_box_lib.scad>;
 
-hinge_type = "snap-on" ;// ["none", "one-piece", "snap-on"]
+lid_type = "snap-on" ;// ["none", "one-piece", "snap-on"]
 front_feature = "notch" ;// [ "none", "slit", "notch"]
 
 make_box = true;

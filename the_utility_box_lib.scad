@@ -3,7 +3,7 @@ COPYRIGHT_INFO = "\tThe Utility Box\n\thttps://github.com/IdoMagal/The-Utility-B
 
 ///////////
 
-hinge_type = "snap-on" ;// ["none", "one-piece", "snap-on"]
+lid_type = "snap-on" ;// ["none", "one-piece", "snap-on", "fit-under"]
 front_feature = "notch" ;// [ "none", "slit", "notch"]
 
 make_box = true;
@@ -36,7 +36,8 @@ debug_closed_percent = 0;
 
 ////////////////////////////////////////////////////////////////////
 
-$fn = $preview ? 25 : 100;
+$fn = $preview ? 12 : 100;
+$fs = $preview ? 2 : 12;
 
 box_depth = interior_depth + 2 * wall_thickness;
 box_width = interior_width + 2 * wall_thickness;
@@ -67,24 +68,31 @@ notch_depth = wall_thickness/2.0;
 debug_xray = false;
 debug_xray_depth = 10;
 
-
 band_hook_depth = wall_thickness * 2;
 band_hook_height = wall_thickness;
 band_hook_gap = 1;
 band_hook_stem_delta = 2;
 
-num_rubber_band_hooks_x = floor( interior_width / ( band_hook_width * 2 ));
-num_rubber_band_hooks_y = floor( interior_depth / ( band_hook_width * 2 ));
-num_rubber_band_hooks_z = floor( interior_height / ( band_hook_width * 2 ));
-num_rubber_band_hooks_z_lid = floor( lid_interior_height / ( band_hook_width * 2 ));
+band_hole_spacing = band_hook_width/3;
+band_hole_size = (band_hook_width - band_hole_spacing) / 2;
+
+num_band_hooks_x = floor( interior_width / ( band_hook_width * 2 ));
+num_band_hooks_y = floor( interior_depth / ( band_hook_width * 2 ));
+num_band_hooks_z = floor( interior_height / ( band_hook_width * 2 ));
+num_band_hooks_z_lid = floor( lid_interior_height / ( band_hook_width * 2 ));
 
 slit_lid_portion = min( lid_interior_height, slit_height);
 slit_box_portion = slit_height - slit_lid_portion;
 
 lip_thickness = wall_thickness - ( wall_thickness * lip_thickness_fraction );
+lip_thickness_inv = wall_thickness - lip_thickness;
 lip_radius = lip_height;
 
 angle = debug_closed_percent > 0 ? debug_closed_percent/100*(-180) : 0;
+
+free_lid = lid_type != "snap-on" && lid_type != "one-piece";
+
+vec_box_center = [ box_width/2, box_depth/2, 0];
 
 ////////////////////////////////////////////////
 ////////////////////////////////////////////////
@@ -98,7 +106,7 @@ module MakeAll()
             XRay()
                 MakeBox();
 
-    if ( box_height != lid_height && hinge_type != "snap-on" )
+    if ( box_height != lid_height && lid_type == "one-piece" )
     {
         echo("<font color='red'>This will need base layer supports because the top and bottom are different
         heights and you have a hinge.</font>");
@@ -148,7 +156,7 @@ module PreviewRotate()
 
 module NoHingeTranslate()
 {
-    if ( hinge_type != "one-piece" && angle == 0 )
+    if ( lid_type != "one-piece" && angle == 0 )
         translate([hinge_outer + 1, 0, lid_height - box_height ]) 
             children();
     else
@@ -168,21 +176,19 @@ module MoveToBoxPosition()
 
 }
 
-module HingeDetente()
+module HingeDetent()
 {
     resize( [ hinge_outer / 2, hinge_outer / 2, hinge_outer / 2 ])
         sphere( r = 1);
 }
 
-module SnapDetente( smaller = false )
+module SnapDetent( smaller = false )
 {
-    lip_detente_radius = lip_thickness - ( smaller ? tolerance : 0 ) ;
+    lip_detent_radius = lip_thickness - ( smaller ? tolerance : 0 ) ;
 
-    intersection()
-    {
-        sphere( r = lip_detente_radius );
-        cube( [lip_detente_radius * 2, lip_thickness * 3, lip_detente_radius * 2], center = true);
-    }
+    translate( [ 0, -0.2, 0])
+        sphere( r = lip_detent_radius );
+    
 }
 
 module MakeBandHooks( h = 0, lid = false )
@@ -213,12 +219,12 @@ module MakeBandHooks( h = 0, lid = false )
             }
     }
 
-    margin_x = interior_width / ( num_rubber_band_hooks_x * band_hook_width) / 2;
-    margin_y = interior_depth / ( num_rubber_band_hooks_y * band_hook_width) / 2;
+    margin_x = interior_width / ( num_band_hooks_x * band_hook_width) / 2;
+    margin_y = interior_depth / ( num_band_hooks_y * band_hook_width) / 2;
 
-    for  (i = [ 0: num_rubber_band_hooks_x - 1 ]) 
+    for  (i = [ 0: num_band_hooks_x - 1 ]) 
     {
-        dist = interior_width * 1/(num_rubber_band_hooks_x);
+        dist = interior_width * 1/(num_band_hooks_x);
         translate([ (i + 1) * dist - dist/2 + margin_x,  0 , h ])
             BandHookNegative();
 
@@ -228,9 +234,9 @@ module MakeBandHooks( h = 0, lid = false )
 
     }
 
-    for  (i = [ 0: num_rubber_band_hooks_y - 1 ]) 
+    for  (i = [ 0: num_band_hooks_y - 1 ]) 
     {
-        dist = interior_depth / num_rubber_band_hooks_y;
+        dist = interior_depth / num_band_hooks_y;
 
         translate([ 0, (i + 1) * dist - dist/2 + margin_y, h ])
             rotate( -90)
@@ -263,25 +269,24 @@ module MakeBandHooks( h = 0, lid = false )
 
 module MakeBandHoles( lid = false )
 {
-    hole_size = band_hook_width * 1/3;
-
     module BandHoleNegative()
     {
        module MakeSmallHoles()
        {
+           gap_between_holes = band_hook_width - 2*band_hole_size;
            translate( [ 0, 0, 0 ])
            {
              translate( [ 0, 0, 0 ])
-                cube( [ hole_size, hole_size, hole_size], center = false);
+                cube( [ band_hole_size, band_hole_size, band_hole_size], center = false);
 
-            translate( [ 2*hole_size, 0, 0 ])
-                cube( [ hole_size, hole_size, hole_size], center = false);
+            translate( [ gap_between_holes + band_hole_size, 0, 0 ])
+                cube( [ band_hole_size, band_hole_size, band_hole_size], center = false);
 
-            translate( [ 0, 2*hole_size, 0 ])
-                cube( [ hole_size, hole_size, hole_size], center = false);
+            translate( [ 0, gap_between_holes + band_hole_size, 0 ])
+                cube( [ band_hole_size, band_hole_size, band_hole_size], center = false);
 
-            translate( [ 2*hole_size, 2*hole_size, 0 ])
-                cube( [ hole_size, hole_size, hole_size], center = false);
+            translate( [ gap_between_holes + band_hole_size, gap_between_holes + band_hole_size, 0 ])
+                cube( [ band_hole_size, band_hole_size, band_hole_size], center = false);
                 
            }
        }       
@@ -294,15 +299,15 @@ module MakeBandHoles( lid = false )
         
     }
 
-    nz = lid ? num_rubber_band_hooks_z_lid : num_rubber_band_hooks_z;
+    nz = lid ? num_band_hooks_z_lid : num_band_hooks_z;
     h = lid ? lid_interior_height : interior_height;
 
-    margin_x = interior_width / ( num_rubber_band_hooks_x * band_hook_width) / 2;
-    margin_y = interior_depth / ( num_rubber_band_hooks_y * band_hook_width) / 2;
+    margin_x = interior_width / ( num_band_hooks_x * band_hook_width) / 2;
+    margin_y = interior_depth / ( num_band_hooks_y * band_hook_width) / 2;
     margin_z = h / ( nz * band_hook_width) / 2;
 
-    distx = interior_width / num_rubber_band_hooks_x;
-    disty = interior_depth / num_rubber_band_hooks_y;
+    distx = interior_width / num_band_hooks_x;
+    disty = interior_depth / num_band_hooks_y;
     distz = h / nz;
 
     module Grid( x, y )
@@ -319,21 +324,63 @@ module MakeBandHoles( lid = false )
 
 
     resize( [ 0, 0, lid ? lid_height : box_height] )
-        Grid( num_rubber_band_hooks_x, num_rubber_band_hooks_y );
+        Grid( num_band_hooks_x, num_band_hooks_y );
 
     // front
     resize( [ 0, box_depth, 0])
-        translate( [ 0, hole_size,0])
+        translate( [ 0, band_hole_size,0])
             RotateAboutPoint( 90, [1,0,0], [ box_width/2, 0, 0 ])
-                Grid( num_rubber_band_hooks_x, nz );
+                Grid( num_band_hooks_x, nz );
 
     // side
     resize( [ box_width, 0, 0])
-        translate( [ hole_size, 0,0])
+        translate( [ band_hole_size, 0,0])
             RotateAboutPoint( -90, [0,1,0], [ 0, finger_length, 0 ])
-                Grid( nz, num_rubber_band_hooks_y);
+                Grid( nz, num_band_hooks_y);
 
 }
+
+module MakeDetents( lid = false )
+{
+    // detent holes
+    translate([ box_width * 1/3,   -( - wall_thickness + lip_thickness ), 0 ]) 
+        SnapDetent( lid );
+
+    translate([ box_width * 2/3,   -( - wall_thickness + lip_thickness - tolerance), 0]) 
+        SnapDetent( lid );
+
+    MirrorAboutPoint( [ 0, 1, 0], vec_box_center )
+    {
+        translate([ box_width * 1/3,   -( - wall_thickness + lip_thickness ), 0 ]) 
+            SnapDetent(lid );
+
+        translate([ box_width * 2/3,   -( - wall_thickness + lip_thickness - tolerance), 0]) 
+            SnapDetent( lid );
+    }
+
+    if ( free_lid )
+    {
+
+        RotateAboutPoint( 90, [0, 0, 1], vec_box_center)
+        {
+            translate([ box_width * 1/3,   -( - wall_thickness + lip_thickness ), 0 ]) 
+                SnapDetent( lid );
+
+            translate([ box_width * 2/3,   -( - wall_thickness + lip_thickness - tolerance), 0]) 
+                SnapDetent( lid );
+
+            MirrorAboutPoint( [ 0, 1, 0], vec_box_center)
+            {
+            translate([ box_width * 1/3,   -( - wall_thickness + lip_thickness ), 0 ]) 
+                    SnapDetent( lid );
+
+            translate([ box_width * 2/3,   -( - wall_thickness + lip_thickness - tolerance), 0]) 
+                    SnapDetent( lid );
+            }
+        }
+
+    }  
+}  
 
 module MakeBox() 
 {
@@ -348,35 +395,40 @@ module MakeBox()
                 // main box
                     cube([ box_width, box_depth, box_height ]);
 
-                // lip
-          *      translate( [ wall_thickness - notch_depth + tolerance, notch_depth + tolerance, lip_height])
-                     cube( [ box_width - ( notch_depth + tolerance ) * 2, box_depth - ( notch_depth + tolerance ) * 2,box_height ]);
+                if ( free_lid )
+                {
+                    // lip
+                  translate( [ wall_thickness - notch_depth + tolerance, notch_depth + tolerance, lip_height])
+                        cube( [ box_width - ( notch_depth + tolerance ) * 2, box_depth - ( notch_depth + tolerance ) * 2,box_height ]);
+                }
+                else
+                {
+                    // curved lip
+                    translate( [ wall_thickness - notch_depth + tolerance, notch_depth + tolerance, lip_height])
+                        hull()
+                        {
+                            vec3 = [ box_width - ( notch_depth + tolerance ) * 2, box_depth - ( notch_depth + tolerance ) * 2,box_height ];
+                            h = vec3[1];
+                            rotation_vec = [1,0,0];
+                            radius = lip_radius;
 
-                // curved lip
-                translate( [ wall_thickness - notch_depth + tolerance, notch_depth + tolerance, lip_height])
-                    hull()
-                    {
-                        vec3 = [ box_width - ( notch_depth + tolerance ) * 2, box_depth - ( notch_depth + tolerance ) * 2,box_height ];
-                        h = vec3[1];
-                        rotation_vec = [1,0,0];
-                        radius = lip_radius;
+                            translate( [ radius, 0, radius ])
+                                rotate( -90, rotation_vec)
+                                    cylinder(r=radius, h=h, center = false);
 
-                        translate( [ radius, 0, radius ])
-                            rotate( -90, rotation_vec)
-                                cylinder(r=radius, h=h, center = false);
+                            translate( [ vec3[0] - radius, 0, radius ])
+                                rotate( -90, rotation_vec)
+                                    cylinder(r=radius, h=h, center = false);
 
-                        translate( [ vec3[0] - radius, 0, radius ])
-                            rotate( -90, rotation_vec)
-                                cylinder(r=radius, h=h, center = false);
+                            translate( [ radius, 0, vec3[2] - radius ])
+                                rotate( -90, rotation_vec)
+                                    cylinder(r=radius, h=h, center = false);
 
-                        translate( [ radius, 0, vec3[2] - radius ])
-                            rotate( -90, rotation_vec)
-                                cylinder(r=radius, h=h, center = false);
-
-                        translate( [ vec3[0] - radius, 0,vec3[2] - radius ])
-                            rotate( -90, rotation_vec)
-                                cylinder(r=radius, h=h, center = false);                
-                    }
+                            translate( [ vec3[0] - radius, 0,vec3[2] - radius ])
+                                rotate( -90, rotation_vec)
+                                    cylinder(r=radius, h=h, center = false);                
+                        }
+                }
 
             }
 
@@ -393,10 +445,20 @@ module MakeBox()
                     cube([notch_depth, notch_width, notch_height]);
 
                 // if no hinge, make a notch on other side as well
-                if ( hinge_type == "none" )
+                if ( free_lid )
                 {
                     translate([ box_width - notch_depth, box_depth/2 -notch_width/2, box_height - notch_height]) 
                         cube([notch_depth, notch_width, notch_height]);
+
+                RotateAboutPoint( 90, [0, 0, 1], vec_box_center )
+                {
+                    translate([0, box_depth/2 -notch_width/2, box_height - notch_height]) 
+                        cube([notch_depth, notch_width, notch_height]);
+
+                    translate([ box_width - notch_depth, box_depth/2 -notch_width/2, box_height - notch_height]) 
+                        cube([notch_depth, notch_width, notch_height]);
+                }
+
                 }
             }	
             else if ( front_feature == "slit" )
@@ -423,18 +485,8 @@ module MakeBox()
                             }
             }
 
-            // detents
-            translate([ box_width * 1/3, -( - wall_thickness + lip_thickness - tolerance), box_height + lip_height/2 ]) 
-                SnapDetente();
-
-            translate([ box_width * 1/3, box_depth - notch_depth - tolerance, box_height + lip_height/2]) 
-                SnapDetente(); 
-
-            translate([ box_width * 2/3, -( - wall_thickness + lip_thickness - tolerance), box_height + lip_height/2]) 
-                SnapDetente();
-
-            translate([ box_width * 2/3, box_depth - notch_depth - tolerance, box_height + lip_height/2]) 
-                SnapDetente();    
+            translate( [ 0, 0, box_height + lip_height/2])
+                MakeDetents( lid = false );
 
             // band hooks
             if ( rubber_band_hooks )
@@ -445,11 +497,47 @@ module MakeBox()
                     MakeBandHoles();
             }
 
+            // this carves out the edges
+            if ( lid_type == "fit-under" )
+            {
+                difference()
+                {
+                    // outer, main-box part
+                    cube([ box_width, box_depth, lid_height + 2*tolerance + lip_thickness_inv ]);
 
-            
+                    //inner
+                    translate( [ lip_thickness_inv + tolerance, lip_thickness_inv + tolerance, 0])
+                        cube([ interior_width + 2*lip_thickness - 2*tolerance, interior_depth + 2*lip_thickness - 2*tolerance, lid_height + 2*tolerance + lip_thickness_inv ]);
+                }
+
+            }
+
 		}
 
-        if ( hinge_type == "snap-on" )
+            // this adds back the angle that allows to print without supports
+            if ( lid_type == "fit-under" )
+            {
+                difference()
+                {
+                    hull()
+                    {
+                        translate( [ 0, 0, lid_height + 2*tolerance + lip_thickness_inv ])
+                            cube([ box_width, box_depth, 1 ]);
+
+                        translate( [ 0, 0, lid_height])
+                            translate( [ lip_thickness + tolerance, lip_thickness + tolerance, 0])
+                                cube([ interior_width + 2*lip_thickness - 2*tolerance, interior_depth + 2*lip_thickness - 2*tolerance, lid_height+ 2*tolerance ]);
+                    }
+
+                    // main cavity
+                    translate([ wall_thickness, wall_thickness, wall_thickness]) 
+                        cube([  interior_width, 
+                                interior_depth, 
+                                interior_height + lip_height + 5 ]);
+                        }
+            }
+
+        if ( lid_type == "snap-on" )
         {
             translate( [ box_width + finger_length, 0,0])
                 difference() 
@@ -468,16 +556,16 @@ module MakeBox()
                     translate([ -finger_length, finger_size ,0]) 
                         cube([ finger_length * 2, box_depth - 2 * finger_size, box_height * 2]);
 
-                    // detente holes
+                    // detent holes
                     translate([0, -( - finger_size + tolerance ), box_height ]) 
-                        HingeDetente();
+                        HingeDetent();
                         
                     translate([0, box_depth - finger_size + tolerance, box_height ]) 
-                        HingeDetente(); 
+                        HingeDetent(); 
                 }
 
         }
-        else if ( hinge_type == "one-piece" )
+        else if ( lid_type == "one-piece" )
         {
             translate( [ box_width + finger_length,0,0])
             {
@@ -513,7 +601,7 @@ module MakeBox()
 
 module MakeLidHinge( )
 {
-    if ( hinge_type == "snap-on" )
+    if ( lid_type == "snap-on" )
     {
         difference() 
         {
@@ -536,13 +624,13 @@ module MakeLidHinge( )
 
         // detents
         translate([0, finger_size, lid_height ]) 
-            HingeDetente();
+            HingeDetent();
 
         translate([0, box_depth - finger_size, lid_height ]) 
-            HingeDetente();  
+            HingeDetent();  
 
     }
-    else if ( hinge_type == "one-piece" )
+    else if ( lid_type == "one-piece" )
     {
         difference() 
         {
@@ -625,20 +713,10 @@ module MakeLid()
         }
     }
 
-        // detents
-    translate([ box_width * 1/3,  notch_depth, lid_height - lip_height + lip_height/2]) 
-            SnapDetente( smaller= true ); 
+    translate( [ 0, 0, lid_height - lip_height/2 ])
+        MakeDetents( lid = true )
 
-    translate([ box_width * 1/3, box_depth - notch_depth, lid_height - lip_height + lip_height/2]) 
-            SnapDetente( smaller= true ); 
-
-    translate([ box_width * 2/3,  notch_depth, lid_height - lip_height + lip_height/2]) 
-            SnapDetente( smaller= true );
-
-    translate([ box_width * 2/3, box_depth - notch_depth, lid_height - lip_height + lip_height/2]) 
-            SnapDetente( smaller= true );                   
-
-    if ( hinge_type != "none" )
+    if ( lid_type != "none" )
     {
         translate( [-finger_length,0,0])
             MakeLidHinge();
@@ -646,3 +724,10 @@ module MakeLid()
 
 }
 
+module MirrorAboutPoint( v, pt) 
+{
+    translate(pt)
+        mirror( v )
+            translate(-pt)
+                children();   
+}
