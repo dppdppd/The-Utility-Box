@@ -19,7 +19,6 @@ box_rubber_band_windows = true;
 
 ////////////////// additional parameters
 
-
 wall_thickness = 2;
 
 lip_height = 3.0;
@@ -46,13 +45,19 @@ dxf_depth = 0.5;
 
 ///////////////////
 
+MakeAll();
+
+/*
+for screenshots
+
 $vpr = [ 48.10, 0.00, 315.00 ];
 $vpt = [ -18.11, 10.79, 64.81 ];
 $vpd = 615.01;
 
-    rotate( 180 )
-MakeAll( 0 );
+ rotate( 180 )
+     MakeAll( 0 );
 
 translate( [50, 90,0] )
     rotate( 0 )
         MakeAll( 95 );
+*/

@@ -6,3 +6,5 @@
 *.scad
 !the_utility_box_lib.scad
 !example.scad
+!mobula6.scad
+!mobula6_batteries.scad
