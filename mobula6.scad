@@ -23,4 +23,6 @@ lid_rubber_band_hooks = true;
 
 box_rubber_band_windows = true;
 
+band_hook_width = 9;
+
 MakeAll();
