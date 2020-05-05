@@ -15,6 +15,11 @@ interior_depth = 112.0;
 interior_height = 20.0;
 lid_interior_height = 20.0;
 
+box_rubber_band_hooks = true;
+lid_rubber_band_hooks = true;
+
+box_rubber_band_windows = true;
+
 wall_thickness = 2;
 
 lip_height = 3.0;
@@ -22,9 +27,6 @@ lip_height = 3.0;
 tolerance = 0.1;
 
 ////////////////// additional parameters
-
-box_rubber_band_hooks = 0;
-box_rubber_band_windows = 0;
 
 band_hook_width = 10;
 
@@ -716,7 +718,7 @@ module MakeLid()
         if ( lid_dxf )
         {
             dxf_thickness = min( lip_thickness, dxf_depth );
-            dxf_size = dxf_scale * min( box_depth, box_width );
+            dxf_size = dxf_scale * min( box_depth * 0.8, box_width * 0.8 );
 
             translate([ box_width/2, box_depth/2 , dxf_thickness])
                 resize( [ dxf_size, dxf_size, dxf_thickness] )
