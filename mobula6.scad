@@ -9,8 +9,8 @@ make_lid = true;
 
 interior_width = 83.0;
 interior_depth = 83.0;
-interior_height = 20.0;
-lid_interior_height = 36.0;
+interior_height = 18.0;
+lid_interior_height = 40.0;
 
 wall_thickness = 2;
 

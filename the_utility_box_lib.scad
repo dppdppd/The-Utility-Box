@@ -87,7 +87,7 @@ band_hole_size = (band_hook_width - band_hole_spacing) / 2;
 num_band_hooks_x = floor( interior_width / ( band_hook_width * 2 ));
 num_band_hooks_y = floor( interior_depth / ( band_hook_width * 2 ));
 num_band_hooks_z = floor( interior_height / ( band_hook_width * 2 ));
-num_band_hooks_z_lid = floor( lid_interior_height / ( band_hook_width * 2 ));
+num_band_hooks_z_lid = floor( ( lid_interior_height - lip_height ) / ( band_hook_width * 2 ));
 
 slit_lid_portion = min( lid_interior_height, slit_height);
 slit_box_portion = slit_height - slit_lid_portion;
@@ -313,13 +313,13 @@ module MakeBandWindows( lid = false )
     nz = lid ? num_band_hooks_z_lid : num_band_hooks_z;
     h = lid ? lid_interior_height : interior_height;
 
+    echo( nz, lid, num_band_hooks_z_lid, num_band_hooks_z);
+
     margin_x = interior_width / ( num_band_hooks_x * band_hook_width) / 2;
     margin_y = interior_depth / ( num_band_hooks_y * band_hook_width) / 2;
-    margin_z = h / ( nz * band_hook_width) / 2;
 
     distx = interior_width / num_band_hooks_x;
     disty = interior_depth / num_band_hooks_y;
-    distz = h / nz;
 
     module Grid( x, y )
     {
@@ -331,20 +331,20 @@ module MakeBandWindows( lid = false )
                                 BandHoleNegative();
     }
 
-
+    //bottom
     resize( [ 0, 0, lid ? lid_height : box_height] )
         Grid( num_band_hooks_x, num_band_hooks_y );
 
     // front
-    translate( [ 0, -5, 0 ])
-        resize( [ 0, box_depth + 10, 0])
+    translate( [ 0, 0, 0 ])
+        resize( [ 0, box_depth + 0, 0])
             translate( [ 0, band_hole_size, 0 ])
                 RotateAboutPoint( 90, [ 1, 0, 0 ], [ box_width/2, 0, 0 ])
                     Grid( num_band_hooks_x, nz );
 
     // side
-    translate( [ -5, 0, 0 ])
-        resize( [ box_width + 10, 0, 0])
+    translate( [ 0, 0, 0 ])
+        resize( [ box_width + 0, 0, 0])
             translate( [ band_hole_size, 0,0])
                 RotateAboutPoint( -90, [0,1,0], [ 0, finger_length, 0 ])
                     Grid( nz, num_band_hooks_y);
@@ -500,7 +500,7 @@ module MakeBox()
                 MakeBandHooks();  
 
                 if ( box_rubber_band_windows )       
-                    MakeBandWindows();
+                    MakeBandWindows( lid = false);
             }
 
             // this carves out the edges
