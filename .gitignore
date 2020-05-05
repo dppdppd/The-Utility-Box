@@ -3,3 +3,5 @@
 *.rsls
 *.test.scad
 *.code-workspace
+*.scad
++example

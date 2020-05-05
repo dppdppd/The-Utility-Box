@@ -5,8 +5,7 @@ COPYRIGHT_INFO = "\tThe Utility Box\n\thttps://github.com/IdoMagal/The-Utility-B
 
 lid_type = "snap-on" ;// ["none", "one-piece", "snap-on", "fit-under"]
 front_feature = "notch" ;// [ "none", "slit", "notch"]
-
-lid_patterned = true;
+lid_feature = "window" ; // [ "none", "window", "pattern", "dxf" ]
 
 make_box = true;
 make_lid = true;
@@ -22,29 +21,34 @@ lip_height = 3.0;
 
 tolerance = 0.1;
 
-logo_front = false;
-logo_top = false;
-logo_path = "";
-logo_scale = 0.8;
+////////////////// additional parameters
 
-rubber_band_hooks = true;
-rubber_band_holes = true;
+box_rubber_band_hooks = 0;
+box_rubber_band_windows = 0;
 
-band_hook_width = 9;
+band_hook_width = 10;
 
 slit_height = 14;
 
-lid_pattern_radius = 3.0;
-lid_pattern_n1 = 6;
-lid_pattern_n2 = 6;
+lid_window_size = 20.0;
+
+lid_pattern_radius = 5.0;
+lid_pattern_n1 = 100;
+lid_pattern_n2 = 100;
+lid_pattern_angle = 30;
 lid_pattern_row_offset = 50;
 lid_pattern_col_offset = 100;
-lid_pattern_shape_thickness = 0.8;
+lid_pattern_shape_thickness = 0.75;
+
+dxf_path = "dxf/logo.dxf";
+dxf_scale = 0.8;
+dxf_depth = 0.5;
+
 
 ////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////
 
-$fn = $preview ? 12 : 100;
-$fs = $preview ? 2 : 12;
+$fn = $preview ? 12 : 0;
 
 box_depth = interior_depth + 2 * wall_thickness;
 box_width = interior_width + 2 * wall_thickness;
@@ -93,22 +97,25 @@ lip_thickness_inv = wall_thickness - lip_thickness;
 lip_radius = lip_height;
 
 free_lid = lid_type != "snap-on" && lid_type != "one-piece";
+lid_patterned = lid_feature == "pattern";
+lid_windowed = lid_feature == "window";
+dxf_front = front_feature == "dxf";
+lid_dxf = lid_feature == "dxf";
+lid_band_windows = lid_feature == "rubber-band-windows";
 
 num_detents_per_side = free_lid ? 1 : 2;
 
 vec_box_center = [ box_width/2, box_depth/2, 0];
 
-debug_closed_percent = 0;
-debug_xray = 0;
-debug_xray_depth = box_depth - 1.1;
-
-angle = debug_closed_percent > 0 ? debug_closed_percent/100*(-180) : 0;
-
+preview_closed_percent = 0;
+preview_xray = 0;
+preview_xray_depth = box_depth - 1.1;
+preview_fixed_cam = false;
 
 ////////////////////////////////////////////////
 ////////////////////////////////////////////////
 
-module MakeAll()
+module MakeAll( preview_closed_percent = 0 )
 {
     echo( str( "\n\n\n", COPYRIGHT_INFO, "\n\n\tVersion ", VERSION, "\n\n" ));
 
@@ -124,14 +131,15 @@ module MakeAll()
     }
 
     if ( make_lid )
-        PreviewRotate()
-            NoHingeTranslate()
+        PreviewRotate( preview_closed_percent )
+            NoHingeTranslate( preview_closed_percent )
                 MoveToLidPosition()
                     XRay()
                         MakeLid();
 }
 
-module RotateAboutPoint(a, v, pt) {
+module RotateAboutPoint(a, v, pt) 
+{
     translate(pt)
         rotate(a,v)
             translate(-pt)
@@ -140,12 +148,12 @@ module RotateAboutPoint(a, v, pt) {
 
 module XRay()
 {
-    if ( debug_xray && $preview )
+    if ( preview_xray && $preview )
     {
         intersection()
         {
             translate([-500,0,-500])
-                cube([1000, debug_xray_depth ,1000]);
+                cube([1000, preview_xray_depth ,1000]);
 
             children();
         }
@@ -154,21 +162,23 @@ module XRay()
         children();
 }
 
-module PreviewRotate()
+module PreviewRotate( preview_closed_percent )
 {
-    if ( $preview && angle != 0 ) 
+    angle = preview_closed_percent > 0 ? preview_closed_percent/100*(-180) : 0;
+
+    if ( 1 && angle != 0 ) 
     {
-        RotateAboutPoint( [ 0, angle, 0 ], 0, [ 0, 0, box_height ] ) 
+        RotateAboutPoint( angle, [ 0, 1, 0 ], [ 0, 0, box_height ] ) 
             children();
     }
     else
         children();
 }
 
-module NoHingeTranslate()
+module NoHingeTranslate( preview_closed_percent )
 {
-    if ( lid_type != "one-piece" && angle == 0 )
-        translate([hinge_outer + 1, 0, lid_height - box_height ]) 
+    if ( lid_type != "one-piece" && preview_closed_percent == 0 )
+        translate( [ hinge_outer + 1, 0, lid_height - box_height ] ) 
             children();
     else
         children();
@@ -270,35 +280,33 @@ module MakeBandHooks( h = 0, lid = false )
     }   
 }
 
-module MakeBandHoles( lid = false )
+module MakeWindow()
+{
+    gap_between_holes = band_hook_width - 2*band_hole_size;
+    
+    translate( [ 0, 0, 0 ])
+        cube( [ band_hole_size, band_hole_size, band_hole_size], center = false);
+
+    translate( [ gap_between_holes + band_hole_size, 0, 0 ])
+        cube( [ band_hole_size, band_hole_size, band_hole_size], center = false);
+
+    translate( [ 0, gap_between_holes + band_hole_size, 0 ])
+        cube( [ band_hole_size, band_hole_size, band_hole_size], center = false);
+
+    translate( [ gap_between_holes + band_hole_size, gap_between_holes + band_hole_size, 0 ])
+        cube( [ band_hole_size, band_hole_size, band_hole_size], center = false);
+    
+}   
+
+module MakeBandWindows( lid = false )
 {
     module BandHoleNegative()
     {
-       module MakeSmallHoles()
-       {
-           gap_between_holes = band_hook_width - 2*band_hole_size;
-           translate( [ 0, 0, 0 ])
-           {
-             translate( [ 0, 0, 0 ])
-                cube( [ band_hole_size, band_hole_size, band_hole_size], center = false);
-
-            translate( [ gap_between_holes + band_hole_size, 0, 0 ])
-                cube( [ band_hole_size, band_hole_size, band_hole_size], center = false);
-
-            translate( [ 0, gap_between_holes + band_hole_size, 0 ])
-                cube( [ band_hole_size, band_hole_size, band_hole_size], center = false);
-
-            translate( [ gap_between_holes + band_hole_size, gap_between_holes + band_hole_size, 0 ])
-                cube( [ band_hole_size, band_hole_size, band_hole_size], center = false);
-                
-           }
-       }       
-
         translate( [ -band_hook_width/2, -band_hook_width/2, 0])
-            MakeSmallHoles();
+            MakeWindow();
 
 //        translate( [ -band_hook_width/2, -band_hook_width/2, band_hook_width * 2/3])
-//            MakeSmallHoles();
+//            MakeWindow();
         
     }
 
@@ -318,11 +326,9 @@ module MakeBandHoles( lid = false )
         if ( x > 0 && y > 0 )
             for  (i = [ 0: 1 : x - 1 ]) 
                 for  (j = [ 0: 1: y - 1 ]) 
-                {
                     translate([ (i + 1) * distx - distx/2 + margin_x,  (j + 1) * disty - disty/2 + margin_y, 0 ])
                             rotate( (i + j) * 90 )
                                 BandHoleNegative();
-                }
     }
 
 
@@ -330,16 +336,18 @@ module MakeBandHoles( lid = false )
         Grid( num_band_hooks_x, num_band_hooks_y );
 
     // front
-    resize( [ 0, box_depth, 0])
-        translate( [ 0, band_hole_size,0])
-            RotateAboutPoint( 90, [1,0,0], [ box_width/2, 0, 0 ])
-                Grid( num_band_hooks_x, nz );
+    translate( [ 0, -5, 0 ])
+        resize( [ 0, box_depth + 10, 0])
+            translate( [ 0, band_hole_size, 0 ])
+                RotateAboutPoint( 90, [ 1, 0, 0 ], [ box_width/2, 0, 0 ])
+                    Grid( num_band_hooks_x, nz );
 
     // side
-    resize( [ box_width, 0, 0])
-        translate( [ band_hole_size, 0,0])
-            RotateAboutPoint( -90, [0,1,0], [ 0, finger_length, 0 ])
-                Grid( nz, num_band_hooks_y);
+    translate( [ -5, 0, 0 ])
+        resize( [ box_width + 10, 0, 0])
+            translate( [ band_hole_size, 0,0])
+                RotateAboutPoint( -90, [0,1,0], [ 0, finger_length, 0 ])
+                    Grid( nz, num_band_hooks_y);
 
 }
 
@@ -465,21 +473,21 @@ module MakeBox()
                     cube([  wall_thickness, interior_depth, slit_box_portion + lip_height]);
             }	
 
-            if ( logo_front )
+            if ( dxf_front )
             {
-                logo_z = front_feature == "slit" ? box_height - slit_height : box_height;
+                dxf_z = front_feature == "slit" ? box_height - slit_height : box_height;
 
-                logo_size = logo_scale * min( box_depth, logo_z - ( rubber_band_hooks ? band_hook_height : 0 ) );
+                dxf_size = dxf_scale * min( box_depth, dxf_z - ( box_rubber_band_hooks ? band_hook_height : 0 ) );
 
-                logo_thickness = min( lip_thickness, 0.3 );
+                dxf_thickness = min( lip_thickness, dxf_depth );
                 //logo
-      #          translate([ logo_thickness, box_depth/2 ,logo_z / 2])
+      #          translate([ dxf_thickness, box_depth/2 ,dxf_z / 2])
                     rotate([90,0,0])
-                        resize( [ logo_thickness,logo_size, logo_size] )
+                        resize( [ dxf_thickness,dxf_size, dxf_size] )
                             rotate([0,-90,0])
                             {
                                 linear_extrude( height = 1, center = false)
-                                    import( logo_path );
+                                    import( dxf_path );
                             }
             }
 
@@ -487,12 +495,12 @@ module MakeBox()
                 MakeDetents( lid = false );
 
             // band hooks
-            if ( rubber_band_hooks )
+            if ( box_rubber_band_hooks )
             {;
                 MakeBandHooks();  
 
-                if ( rubber_band_holes )       
-                    MakeBandHoles();
+                if ( box_rubber_band_windows )       
+                    MakeBandWindows();
             }
 
             // this carves out the edges
@@ -664,67 +672,81 @@ module MakeLidHinge( )
 	
 module MakeLid() 
 {
-    difference() 
+    difference()
     {
-        // main shape
-        cube([box_width,box_depth,lid_height - tolerance]);
-        
-        translate( [ wall_thickness, wall_thickness, 0 ] )
+        // combine the detents with the main box because the slit subtracts the front one
+        union()
         {
-            //main cavity
-            translate([ 0, 0, lid_patterned ? 0 : wall_thickness ]) 
-                cube([  interior_width, interior_depth, lid_height]);
-
-            // lip 
-                translate( [ -lip_thickness - tolerance,    
-                            -lip_thickness - tolerance,     
-                            lid_height - lip_height ])
-                    cube( [ interior_width + 2*notch_depth + 2*tolerance, 
-                            interior_depth + 2*notch_depth + 2*tolerance, 
-                            lip_height]);
-                
-
-            if ( front_feature == "slit")
+            difference() 
             {
-                translate( [ interior_width, 0, lid_interior_height - slit_lid_portion + wall_thickness])
-                    cube([  wall_thickness, box_depth - 2*wall_thickness, slit_lid_portion]);
+                // main shape
+                cube([box_width,box_depth,lid_height - tolerance]);
+                
+                translate( [ wall_thickness, wall_thickness, 0 ] )
+                {
+                    //main cavity
+                    translate([ 0, 0, lid_patterned ? 0 : wall_thickness ]) 
+                        cube([  interior_width, interior_depth, lid_height]);
+
+                    // lip 
+                        translate( [ -lip_thickness - tolerance,    
+                                    -lip_thickness - tolerance,     
+                                    lid_height - lip_height ])
+                            cube( [ interior_width + 2*notch_depth + 2*tolerance, 
+                                    interior_depth + 2*notch_depth + 2*tolerance, 
+                                    lip_height]);
+                }
             }
+
+            translate( [ 0, 0, lid_height - lip_height/2 ])
+                MakeDetents( lid = true );
+
+                // seal it
+            if ( lid_patterned )
+                MakePattern( box_width, box_depth, wall_thickness);
         }
 
-        if ( logo_top )
+        if ( front_feature == "slit")
         {
-            logo_thickness = min( lip_thickness, 0.1 );
-            logo_size = logo_scale * min( box_depth, box_width );
+            translate( [ box_width - wall_thickness, wall_thickness, lid_interior_height - slit_lid_portion + wall_thickness])
+                cube([  wall_thickness, box_depth - 2*wall_thickness, slit_lid_portion]);
+        }
+    
 
-            translate([ box_width/2, box_depth/2 , logo_thickness])
-                resize( [ logo_size, logo_size, logo_thickness] )
+        if ( lid_dxf )
+        {
+            dxf_thickness = min( lip_thickness, dxf_depth );
+            dxf_size = dxf_scale * min( box_depth, box_width );
+
+            translate([ box_width/2, box_depth/2 , dxf_thickness])
+                resize( [ dxf_size, dxf_size, dxf_thickness] )
                     rotate([180,0,-90])
-                    {
                         linear_extrude(height = 1, center = false, $fn=100)
-                            import( logo_path );
-                    }
-        }    
+                            import( dxf_path );
+        }
+
+        if ( lid_windowed )
+        {
+            translate( [ box_width * 1/3 - lid_window_size/2, box_width * 1/3 - lid_window_size/2, 0 ] )
+                resize( [ lid_window_size, lid_window_size, 0]) 
+                    MakeWindow();
+        }
 
         // band hooks
-        if ( rubber_band_hooks )
+        if ( lid_rubber_band_hooks )
         {
             MakeBandHooks( lid = true );  
 
-            if ( rubber_band_holes )       
-                MakeBandHoles( lid = true );
+            if ( lid_band_windows )       
+                MakeBandWindows( lid = true );
         }
     }
-
-    translate( [ 0, 0, lid_height - lip_height/2 ])
-        MakeDetents( lid = true );
 
     if ( !free_lid )
         translate( [-finger_length,0,0])
             MakeLidHinge();
     
-    // seal it
-    if ( lid_patterned )
-        MakePattern( box_width, box_depth, wall_thickness);
+
 }
 
 module MakePattern( x, y, z )
@@ -748,7 +770,7 @@ module MakePattern( x, y, z )
 
     module Make2DPattern( x = 0, y = 0, R = 1, t = 0.2 )
     {
-        r = cos(30) * R;
+        r = cos( lid_pattern_angle ) * R;
 
         dx = r * ( 1 + lid_pattern_col_offset / 100 ) - t;
         dy = R * ( 1 + ( lid_pattern_row_offset / 100 ) ) - t;
@@ -760,7 +782,7 @@ module MakePattern( x, y, z )
             translate( [ ( j % 2 ) * (r - t/2), 0, 0 ] )
                 for( i = [ 0: x_count ] )
                     translate( [ i * dx, j * dy, 0 ] )
-                        rotate( a =30, v=[ 0, 0, 1 ] )
+                        rotate( a = lid_pattern_angle, v=[ 0, 0, 1 ] )
                         {
                             difference()
                             {
