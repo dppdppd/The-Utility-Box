@@ -315,8 +315,6 @@ module MakeBandWindows( lid = false )
     nz = lid ? num_band_hooks_z_lid : num_band_hooks_z;
     h = lid ? lid_interior_height : interior_height;
 
-    echo( nz, lid, num_band_hooks_z_lid, num_band_hooks_z);
-
     margin_x = interior_width / ( num_band_hooks_x * band_hook_width) / 2;
     margin_y = interior_depth / ( num_band_hooks_y * band_hook_width) / 2;
 
