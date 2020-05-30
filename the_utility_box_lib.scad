@@ -1,11 +1,11 @@
-VERSION = "1.00";
+VERSION = "1.01";
 COPYRIGHT_INFO = "\tThe Utility Box\n\thttps://github.com/IdoMagal/The-Utility-Box\n\n\tCopyright 2020 Ido Magal\n\tCreative Commons - Attribution - Non-Commercial - Share Alike.\n\thttps://creativecommons.org/licenses/by-nc-sa/4.0/legalcode";
 
 ///////////
 
 lid_type = "snap-on" ;// ["none", "one-piece", "snap-on", "fit-under"]
 front_feature = "notch" ;// [ "none", "slit", "notch"]
-lid_feature = "window" ; // [ "none", "window", "pattern", "dxf" ]
+lid_feature = "window" ; // [ "none", "window", "pattern", "dxf", "text" ]
 
 make_box = true;
 make_lid = true;
@@ -45,6 +45,13 @@ lid_pattern_shape_thickness = 0.75;
 dxf_path = "dxf/logo.dxf";
 dxf_scale = 0.8;
 dxf_depth = 0.5;
+
+label_text = "LiHV 300mah";
+label_font = ".Helvetica Neue DeskInterface:style=Bold";
+label_size = 10;
+label_spacing = 1;
+label_thickness = 0.7;
+
 
 
 ////////////////////////////////////////////////////////////////////
@@ -101,6 +108,7 @@ lip_radius = lip_height;
 free_lid = lid_type != "snap-on" && lid_type != "one-piece";
 lid_patterned = lid_feature == "pattern";
 lid_windowed = lid_feature == "window";
+lid_text = lid_feature == "text";
 dxf_front = front_feature == "dxf";
 lid_dxf = lid_feature == "dxf";
 lid_band_windows = lid_feature == "rubber-band-windows";
@@ -481,7 +489,7 @@ module MakeBox()
 
                 dxf_thickness = min( lip_thickness, dxf_depth );
                 //logo
-      #          translate([ dxf_thickness, box_depth/2 ,dxf_z / 2])
+                translate([ dxf_thickness, box_depth/2 ,dxf_z / 2])
                     rotate([90,0,0])
                         resize( [ dxf_thickness,dxf_size, dxf_size] )
                             rotate([0,-90,0])
@@ -670,6 +678,30 @@ module MakeLidHinge( )
     }
 }
 	
+
+module MakeLidText( thickness = label_thickness )
+{
+    module Make2dLidText()
+    {
+        text(text = str( label_text ), 
+            font = label_font,  
+            size = label_size, 
+            spacing = label_spacing,
+            valign = "center", 
+            halign = "center", 
+            $fn=50);
+    }
+
+    xpos = box_width/2;
+    ypos = box_depth/2;
+
+    linear_extrude( thickness )
+        translate( [ xpos, ypos, 0 ] )
+            MirrorAboutPoint( [ 1,0,0],[0,0, thickness / 2])
+                RotateAboutPoint( -90, [0,0,1], [0,0,0] )
+                    Make2dLidText();
+}
+
 module MakeLid() 
 {
     difference()
@@ -680,7 +712,7 @@ module MakeLid()
             difference() 
             {
                 // main shape
-                cube([box_width,box_depth,lid_height - tolerance]);
+                cube([box_width, box_depth, lid_height - tolerance]);
                 
                 translate( [ wall_thickness, wall_thickness, 0 ] )
                 {
@@ -724,12 +756,15 @@ module MakeLid()
                         linear_extrude(height = 1, center = false, $fn=100)
                             import( dxf_path );
         }
-
-        if ( lid_windowed )
+        else if ( lid_windowed )
         {
             translate( [ box_width * 1/3 - lid_window_size/2, box_width * 1/3 - lid_window_size/2, 0 ] )
                 resize( [ lid_window_size, lid_window_size, 0]) 
                     MakeWindow();
+        }
+        else if ( lid_text )
+        {
+            MakeLidText();
         }
 
         // band hooks
