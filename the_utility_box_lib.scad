@@ -4,8 +4,8 @@ COPYRIGHT_INFO = "\tThe Utility Box\n\thttps://github.com/IdoMagal/The-Utility-B
 ///////////
 
 lid_type = "snap-on" ;// ["none", "one-piece", "snap-on", "fit-under"]
-front_feature = "notch" ;// [ "none", "slit", "notch"]
-lid_feature = "window" ; // [ "none", "window", "pattern", "dxf", "text" ]
+front_feature = "none" ;// [ "none", "slit", "notch"]
+lid_feature = "svg" ; // [ "none", "window", "pattern", "dxf", "svg", "text" ]
 
 make_box = true;
 make_lid = true;
@@ -57,7 +57,7 @@ label_thickness = 0.7;
 ////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////
 
-$fn = $preview ? 12 : 50;
+$fn = $preview ? 12 : 100;
 
 box_depth = interior_depth + 2 * wall_thickness;
 box_width = interior_width + 2 * wall_thickness;
@@ -111,6 +111,8 @@ lid_windowed = lid_feature == "window";
 lid_text = lid_feature == "text";
 dxf_front = front_feature == "dxf";
 lid_dxf = lid_feature == "dxf";
+svg_front = front_feature == "svg";
+lid_svg = lid_feature == "svg";
 lid_band_windows = lid_feature == "rubber-band-windows";
 
 num_detents_per_side = free_lid ? 1 : 2;
@@ -125,7 +127,9 @@ preview_fixed_cam = false;
 ////////////////////////////////////////////////
 ////////////////////////////////////////////////
 
-module MakeAll( preview_closed_percent = 0 )
+Main();
+
+module Main( preview_closed_percent = 0 )
 {
     echo( str( "\n\n\n", COPYRIGHT_INFO, "\n\n\tVersion ", VERSION, "\n\n" ));
 
@@ -499,6 +503,24 @@ module MakeBox()
                             }
             }
 
+            if ( svg_front )
+            {
+                svg_z = front_feature == "slit" ? box_height - slit_height : box_height;
+
+                svg_size = svg_scale * min( box_depth, svg_z - ( box_rubber_band_hooks ? band_hook_height : 0 ) );
+
+                svg_thickness = min( lip_thickness, svg_depth );
+                //logo
+                translate([ svg_thickness, box_depth/2 ,svg_z / 2])
+                    rotate([90,0,0])
+                        resize( [ svg_thickness,svg_size, svg_size] )
+                            rotate([0,-90,0])
+                            {
+                                linear_extrude( height = 1, center = false)
+                                    import( svg_path );
+                            }
+            }            
+
             translate( [ 0, 0, box_height + lip_height/2])
                 MakeDetents( lid = false );
 
@@ -688,8 +710,7 @@ module MakeLidText( thickness = label_thickness )
             size = label_size, 
             spacing = label_spacing,
             valign = "center", 
-            halign = "center", 
-            $fn=50);
+            halign = "center");
     }
 
     xpos = box_width/2;
@@ -756,6 +777,17 @@ module MakeLid()
                         linear_extrude(height = 1, center = false, $fn=100)
                             import( dxf_path );
         }
+        else if ( lid_svg )
+        {
+            svg_thickness = min( lip_thickness, svg_depth );
+
+            translate([ box_width/2, box_depth/2 , 0])
+               resize( [ svg_scale * box_width, svg_scale * box_depth, svg_thickness] )
+                     mirror([0,1,0])
+                rotate( [0,0,90])
+                        linear_extrude(height = svg_thickness, center = true)
+                            import( svg_path, center = true );
+        }        
         else if ( lid_windowed )
         {
             translate( [ box_width * 1/3 - lid_window_size/2, box_width * 1/3 - lid_window_size/2, 0 ] )
