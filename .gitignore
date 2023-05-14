@@ -1,10 +1,12 @@
 *.stl
 /old
 *.rsls
-*.test.scad
 *.code-workspace
 *.scad
 !the_utility_box_lib.scad
 !example.scad
 images/buttonshy.ai
 images/buttonshy.svg
+import/buttonshy.ai
+import/buttonshy.svg
+import/logo.dxf
