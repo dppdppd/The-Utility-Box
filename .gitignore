@@ -1,6 +1,4 @@
 *.stl
-/old
-*.rsls
 *.code-workspace
 *.scad
 !the_utility_box_lib.scad
